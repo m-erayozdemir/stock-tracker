@@ -1,83 +1,95 @@
 # Stock Tracker
 
-A full-stack stock tracking prototype developed by Mehmet Eray Ozdemir during
-the July 2025 Figensoft internship. React provides the interface; Express,
-MongoDB, Socket.IO and RabbitMQ support the application and background workers.
+A full-stack application for tracking stocks, managing a simulated portfolio and
+communicating with other users. Developed by Mehmet Eray Ozdemir during the
+July 2025 Figensoft internship.
 
-## Features represented in the source
+**Technologies:** React, Express, MongoDB/Mongoose, Socket.IO, RabbitMQ,
+JWT, Docker Compose and Nginx.
 
-- Registration, JWT authentication and optional Google sign-in; SMS and reCAPTCHA disabled.
-- Stock lookup, favorites, historical prices and price alerts.
-- Portfolio and simulated trade/limit-order bookkeeping in MongoDB.
-- User discovery, following, direct messages and online/typing events.
-- Charts, exchange rates, precious-metal quotes and weather widgets.
-- Separate SMS and limit-order workers, with Docker Compose service definitions.
+## Key capabilities
 
-This is a portfolio source release. A live end-to-end run has not been verified
-in this preparation; API credentials, MongoDB, RabbitMQ and identity/SMS services
-are required for the corresponding features. No real brokerage execution is
-implemented or claimed.
+- Account registration, password-based login and optional Google sign-in.
+- Stock search, favorites, historical prices and price alert management.
+- Simulated portfolio, buy/sell records and limit-order processing.
+- User discovery, following, direct messaging and online/typing indicators.
+- Market charts, exchange rates and supporting dashboard widgets.
+- Background workers and Docker Compose service definitions.
 
-## Structure
+## Public release configuration
+
+**SMS delivery, SMS verification and Google reCAPTCHA are disabled in this release.**
+Registration proceeds without an OTP, and login does not require a CAPTCHA.
+Password checks and JWT authentication remain in place. Google OAuth sign-in is
+a separate optional integration and is retained.
+
+SMS alerts are not delivered. Restoring SMS and CAPTCHA requires implementing the
+verification flows again; setting credentials alone does not re-enable them.
+Personal test data and embedded provider credentials have been removed.
+
+## Architecture
 
 ```text
 frontend/           React interface and Nginx configuration
 backend/routes/     HTTP endpoints
 backend/models/     MongoDB models
-backend/utils/      SMS and RabbitMQ helpers
+backend/utils/      Queue helpers and disabled SMS adapter
 backend/*Worker.js  Background workers
 docker-compose.yml  Local service definitions
 ```
 
-## Configuration
+MongoDB stores users, messages, alerts and simulated transactions. Socket.IO
+handles real-time events; RabbitMQ supports the background messaging workflow.
+Trading features record simulated operations rather than executing brokerage orders.
 
-Copy each `.env.example` to `.env` in its own directory. Configure MongoDB,
-RabbitMQ and a random JWT secret. External integrations include Twelve Data,
-Finnhub, Google OAuth, reCAPTCHA and Posta Güvercini SMS. Provider access and
-current API behavior have not been checked as part of this preparation.
+## Setup
 
-SMS and Google reCAPTCHA verification are disabled in this public release.
-Registration proceeds without an OTP and login does not require a CAPTCHA.
-SMS delivery (including alerts) is disabled; Google OAuth sign-in is a separate
-optional integration and remains in the source. Re-enabling verification requires
-restoring the relevant flows, not just setting an environment variable.
+Copy `.env.example` to `.env` in both `backend/` and `frontend/`. Configure
+MongoDB, RabbitMQ, a random JWT secret and the market-data integrations you need
+(Twelve Data and Finnhub). Google sign-in requires its own client configuration.
+SMS and reCAPTCHA credentials are not required.
 
-Some original components call market-data providers from the browser. Values
-prefixed `REACT_APP_` are embedded in the frontend bundle and are not secrets.
-Move restricted provider access behind backend endpoints before public hosting.
+With MongoDB and RabbitMQ running, use local service addresses in `backend/.env`:
 
-## Local source setup
+```sh
+# From backend/
+npm install
+npm start
 
-With MongoDB and RabbitMQ running, use local service addresses in `backend/.env`.
-In `backend/`, run `npm install` then `npm start`. In `frontend/`, run `npm install`
-then `npm start`. Worker entry points are `node smsWorker.js` and
-`node limitWorker.js` from the backend directory. The original Docker images use
-Node 18; runtime modernization and full dependency/build verification are pending.
+# In another terminal, from frontend/
+npm install
+npm start
+```
 
-Alternatively, configure both environment files and run
-`docker compose --env-file frontend/.env up --build` from the project root.
-The frontend is at localhost:3000 and the API at localhost:5001. The React build
-needs build-time variables; the Compose file supplies those separately from the
-backend runtime environment. Docker startup has not been validated here.
+The web interface runs at localhost:3000 and the API at localhost:5001. Run
+`node limitWorker.js` from `backend/` for limit-order processing. The retained
+SMS worker cannot send messages in this release.
 
-## Known limitations
+Alternatively, with Docker installed, run from the repository root:
 
-- Socket events trust client-supplied user IDs; authentication hardening is needed.
-- Order/balance updates are prototype bookkeeping, not a verified transactional
-  financial system.
-- External services, background workers and rate limits affect functionality.
-- No automated suite is present in this archive; `sendTest.js` is a manual SMS
-  utility, not an isolated unit test. It requires an explicit `SMS_TEST_PHONE`.
+```sh
+docker compose --env-file frontend/.env up --build
+```
 
-## Portfolio preparation
+The Compose example uses container hostnames for MongoDB and RabbitMQ. React
+configuration is passed at build time. The Dockerfiles retain the original Node 18
+base; runtime updates should be evaluated before deployment.
 
-Removed a hardcoded provider key and personal SMS test number from this copy,
-replaced local-network CORS entries with configuration, standardized Twelve Data
-environment names, and added example environment files and Docker exclusions.
-Original project files are preserved separately. No new project license is assigned.
+## Validation and limitations
 
-## Validation
+The application previously ran in its original development environment. In this
+release, syntax checks passed for 26 backend and 27 frontend JavaScript files;
+SMS/CAPTCHA removal was checked in the source. Full build, Docker startup and
+external-service workflows have not been rerun in the current environment.
 
-Syntax checks passed for 26 backend and 27 frontend JavaScript files. A controlled
-check confirmed that disabled SMS sending makes no provider request. Full frontend
-build, Docker startup, database workflows and external integrations remain untested.
+- Some market-data calls originate in the browser. `REACT_APP_` values are public
+  in the bundle; restricted provider access belongs behind backend endpoints.
+- Socket events trust client-supplied user IDs and need authentication hardening.
+- Portfolio and balance updates are prototype bookkeeping, not a transactional
+  financial platform.
+- Provider availability, credentials and rate limits affect dependent features.
+
+## Author
+
+Mehmet Eray Ozdemir. Published as an internship portfolio project.
+No new project-wide license is assigned; existing dependency licenses apply.
